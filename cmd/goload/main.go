@@ -1,14 +1,20 @@
 package main
 
 import (
+	"goload/internal/handler/http"
 	"log"
+)
 
-	"github.com/tranHieuDev23/GoLoad_pocketbase/internal/handlers/http"
+var (
+	version    string
+	commitHash string
 )
 
 func main() {
+	log.Printf("Goload version: %s, commit hash: %s\n", version, commitHash)
+
 	server := http.NewServer()
 	if err := server.Start(); err != nil {
-		log.Fatal(err)
+		log.Fatalln("failed to run server", err)
 	}
 }

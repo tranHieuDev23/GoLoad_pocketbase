@@ -11,19 +11,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func Register0001Migration(app core.App) error {
-	_, err := app.Dao().FindCollectionByNameOrId("download_tasks")
-	if !errors.Is(err, sql.ErrNoRows) {
+func register0001Migration(app core.App) error {
+	if _, err := app.Dao().FindCollectionByNameOrId("download_tasks"); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			app.Logger().With("err", err).Error("failed to find download_tasks collection")
+			return err
+		}
+	} else {
 		return nil
 	}
 
 	form := forms.NewCollectionUpsert(app, &models.Collection{})
-	form.Name = "download_tasks"
-	form.Type = models.CollectionTypeBase
 	form.ListRule = proto.String("@request.auth.id = of_account_id")
 	form.ViewRule = proto.String("@request.auth.id = of_account_id")
 	form.UpdateRule = proto.String("@request.auth.id = of_account_id")
 	form.DeleteRule = proto.String("@request.auth.id = of_account_id")
+	form.Name = "download_tasks"
+	form.Type = models.CollectionTypeBase
 	form.Schema.AddField(&schema.SchemaField{
 		Name:     "of_account_id",
 		Type:     schema.FieldTypeRelation,
@@ -38,8 +42,9 @@ func Register0001Migration(app core.App) error {
 		Type:     schema.FieldTypeNumber,
 		Required: true,
 		Options: &schema.NumberOptions{
-			Min: proto.Float64(1),
-			Max: proto.Float64(1),
+			Min:       proto.Float64(1),
+			Max:       proto.Float64(1),
+			NoDecimal: true,
 		},
 	})
 	form.Schema.AddField(&schema.SchemaField{
@@ -48,8 +53,8 @@ func Register0001Migration(app core.App) error {
 		Required: true,
 	})
 
-	err = form.Submit()
-	if err != nil {
+	if err := form.Submit(); err != nil {
+		app.Logger().With("err", err).Error("failed to create download_tasks collection")
 		return err
 	}
 
